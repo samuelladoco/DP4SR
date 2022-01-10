@@ -1,0 +1,7 @@
+{
+    "python.analysis.extraPaths": ["Python\\Codes"], 
+    "editor.minimap.enabled": false,
+    "editor.renderWhitespace": "all",
+    "editor.rulers": [80], 
+    "python.analysis.typeCheckingMode": "strict"
+}
