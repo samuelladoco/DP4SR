@@ -37,10 +37,10 @@ class Level:
     num_required_gems: int = dataclasses.field(compare=False)
     times: dict[int, float] = dataclasses.field(compare=False)
     __to_be_unlocked_levels: list[Level] = dataclasses.field(
-        init=False, default_factory=list, compare=False
+        init=False, default_factory=list, compare=False,
     )
     __next_levels_and_times: dict[Level, float] = dataclasses.field(
-        init=False, default_factory=dict, compare=False
+        init=False, default_factory=dict, compare=False,
     )
 
     def get_to_be_unlock_levels(self) -> list[Level]:
@@ -70,8 +70,8 @@ class Level:
 
     def __repr__(self) -> str:
         return (
-            f'{self.ep_pg}: ' + 
-            f'n={self.name}, ' + 
+            f'{self.ep_pg}: ' +
+            f'n={self.name}, ' +
             f'#rg={self.num_required_gems}, ' +
             f't={[f"{n}: {t:.2f}" for n, t in self.times.items()]}, '
             f'tbul={[f"{l.ep_pg}" for l in self.get_to_be_unlock_levels()]}, ' +

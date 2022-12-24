@@ -40,15 +40,15 @@ class Label:
     def __repr_label_prev(self) -> str:
         return (
             'None' if self.label_prev is None else (
-                f'({self.label_prev.vertex_this}, ' + 
+                f'({self.label_prev.vertex_this}, ' +
                 f'{self.label_prev.cumulative_time:.2f})'
             )
         )
 
     def __repr__(self) -> str:
         return (
-            f'vt={self.vertex_this}, ' + 
-            f'lp={self.__repr_label_prev()}, ' + 
+            f'vt={self.vertex_this}, ' +
+            f'lp={self.__repr_label_prev()}, ' +
             f'ct={self.cumulative_time:.2f}'
         )
 # ----------------------------------------------------------------------
@@ -71,11 +71,22 @@ class OptimizerByDynamicProgramming:
     levels: list[Level]
     max_labels_per_vertex: int
     max_required_gems: int = dataclasses.field(compare=False)
+    # 値のデータ構造をなぜ list にしたのか記憶がない…
+    # 組み込みの sort が使えて楽できるので選んだのかな?
+    # 本来ならば連結リストにでもしたうえで、ソートの箇所は自前で整列したほうがよい
+    # ただし、コレクションの要素数はたかだか max_labels_per_vertex なので、
+    # max_labels_per_vertex の値がよっぽど大きくないかぎりはどのデータ構造でも処理時間の違いは微小になりそう
     __labels: dict[Vertex, list[Label]] = dataclasses.field(
-        init=False, default_factory=dict, compare=False
+        init=False, default_factory=dict, compare=False,
     )
-    __q: queue.PriorityQueue[Vertex] =dataclasses.field(
-        init=False, default_factory=queue.PriorityQueue, compare=False)
+    # Vertex の探索順をなぜ queue.PriorityQueue で決めたのか記憶がない…
+    # 探索順は (面, ダイヤ数) の辞書式順であり、この実装でもそういう動きをするため楽できるということで選んだのかな?
+    # 本来ならば 面 , ダイヤ数 の 2重の for で回せばよい
+    # ただし、コレクションの要素数はたかだか len(levels) * max_required_gems なので、
+    # len(levels), max_required_gems の値がよっぽど大きくないかぎりはこの実装でも処理時間は大きくならなさそう
+    __q: queue.PriorityQueue[Vertex] = dataclasses.field(
+        init=False, default_factory=queue.PriorityQueue, compare=False,
+    )
 
     def solve(self) -> list[tuple[list[Vertex], float]]:
         """チャートを求める"""
@@ -88,6 +99,7 @@ class OptimizerByDynamicProgramming:
         del num_gems, time
 
         # (面, ダイヤ数) を辞書式の順番で探索
+        # 実装が面倒なので、計算量は無視して queue.PriorityQueue で対応
         while self.__q.empty() is False:
             vertex_this: Vertex = self.__q.get()
             self.__generate_next(vertex_this)
@@ -121,16 +133,16 @@ class OptimizerByDynamicProgramming:
                     continue
                 # 次に移動した面で取得するダイヤ数とクリア時間について
                 for num_gems_next, time_next in level_next.times.items():
-                    # 
+                    #
                     # ダイヤ数 = この頂点のダイヤ数 + 次に移動した面で取得するダイヤ数
                     n_g: int = vertex_this.cumlative_num_gems + num_gems_next
                     # ダイヤ数を必要以上に取った場合
                     if n_g > self.max_required_gems:
                         continue
-                    # 
+                    #
                     # 時間 = この頂点までの累積時間 + 次に移動した面への移動時間 + 次に移動した面のクリア時間
                     t: float = label_this.cumulative_time + time_move + time_next
-                    # 
+                    #
                     # (次に移動した面, ダイヤ数) の頂点 のラベルたちとの比較
                     vertex_next: Vertex = Vertex(level_next, n_g)
                     # ラベルがない場合
@@ -141,17 +153,22 @@ class OptimizerByDynamicProgramming:
                         self.__q.put(vertex_next)
                     # ラベルがあるが最大数以下の個数しかない場合
                     elif len(self.__labels[vertex_next]) < self.max_labels_per_vertex:
-                        # 実装が面倒なので、計算量は無視して組み込みのソートで対応
+                        # 実装が面倒なので、計算量は無視して list で利用できる組み込みのソートで対応
+                        # 組み込みのソートのアルゴリズムはティムソートであり、
+                        # 整列済みの配列に1つ加えて再ソートするのは時間かからんやろという気持ち
                         self.__labels[vertex_next].append(
                             Label(vertex_next, label_this, t)
                         )
                         self.__labels[vertex_next].sort(
-                            key=lambda x:x.cumulative_time)
+                            key=lambda x:x.cumulative_time
+                        )
                     # ラベルがあり最大個数に達している場合
                     else:
                         # 時間 が累積時間が最も長いラベルの時間より短い場合
                         if t < self.__labels[vertex_next][-1].cumulative_time:
-                            # 実装が面倒なので、計算量は無視して組み込みのソートで対応
+                            # 実装が面倒なので、計算量は無視して list で利用できる組み込みのソートで対応
+                            # 組み込みのソートのアルゴリズムはティムソートであり、
+                            # 整列済みの配列の末尾を新しいのに入れ替えて再ソートするのは時間かからんやろという気持ち
                             self.__labels[vertex_next][-1] = Label(
                                 vertex_next, label_this, t
                             )
@@ -178,7 +195,7 @@ class OptimizerByDynamicProgramming:
         s += f'lables='
         if len(self.__labels) > 0:
             s += '\n' + f'\n'.join(
-                [f"{v}: ['{self.__repr_labels(ls)}']" 
+                [f"{v}: ['{self.__repr_labels(ls)}']"
                  for v, ls in self.__labels.items()]
                 ) + '\n'
         else:

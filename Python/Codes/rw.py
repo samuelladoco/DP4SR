@@ -41,7 +41,7 @@ class Reader:
         df_ins_levels: pd.DataFrame = pd.read_csv(
             rf'{workspace_base_folder_abspath}\Input\CTTT\CTTT_Levels.csv'
         )
-        
+
         cls.__max_gems_per_l = max(
             int(str(c).strip('Time_NumGems-')) for c in df_ins_levels.columns
             if (str(c).strip('Time_NumGems-')).isdigit() is True
@@ -65,19 +65,19 @@ class Reader:
         levels: dict[tuple[int, int], Level] = {}
         for row in df_ins_levels.itertuples():
             l_from: Level = Level(
-                (int(row[1]), int(row[2])), 
-                str(row[3]), 
-                cls.__to_zero_if_nan_else_cast(row[4]), 
-                {i - 5: round(float(row[i]), 2) 
-                 for i in range(5, 5 + cls.__max_gems_per_l + 1)}, 
+                (int(row[1]), int(row[2])),
+                str(row[3]),
+                cls.__to_zero_if_nan_else_cast(row[4]),
+                {i - 5: round(float(row[i]), 2)
+                 for i in range(5, 5 + cls.__max_gems_per_l + 1)},
             )
             levels[l_from.ep_pg] = l_from
             del l_from
         del row
         for row in df_ins_levels.itertuples():
             for j in range(
-                    5 + cls.__max_gems_per_l + 1, 
-                    5 + cls.__max_gems_per_l + 1 + 2 * cls.__max_unlock_ls_per_l, 
+                    5 + cls.__max_gems_per_l + 1,
+                    5 + cls.__max_gems_per_l + 1 + 2 * cls.__max_unlock_ls_per_l,
                     2):
                 episode_to: int = cls.__to_zero_if_nan_else_cast(row[j])
                 page_to: int = cls.__to_zero_if_nan_else_cast(row[j + 1])
@@ -93,7 +93,7 @@ class Reader:
         return levels
 
     @classmethod
-    def read_moves_and_update_levels(cls, 
+    def read_moves_and_update_levels(cls,
             levels: dict[tuple[int, int], Level]
             ) -> None:
         """Moves シート(ファイル)を読み込み、内容を Levels オブジェクトの next_levels_and_times に加える"""
@@ -154,20 +154,20 @@ class Writer:
         for pk in moves_pks:
             df_moves_pks = df_moves_pks.append(
                 pd.Series(
-                    [pk[0].ep_pg[0], pk[0].ep_pg[1], 
-                     pk[1].ep_pg[0], pk[1].ep_pg[1], ''], 
+                    [pk[0].ep_pg[0], pk[0].ep_pg[1],
+                     pk[1].ep_pg[0], pk[1].ep_pg[1], ''],
                     index=cols
-                ), 
-                ignore_index=True
+                ),
+                ignore_index=True,
             )
         del pk
         df_moves_pks.to_csv(
-            rf'{workspace_base_folder_abspath}\Input\CTTT\CTTT_Moves_base.csv', 
-            index=False
+            rf'{workspace_base_folder_abspath}\Input\CTTT\CTTT_Moves_base.csv',
+            index=False,
         )
 
     @classmethod
-    def output_strategies(cls, 
+    def output_strategies(cls,
             strategies: list[tuple[list[Vertex], float]]
             ) -> None:
         """ チャートとして strategies (複数個の場合あり)を出力する"""
@@ -188,10 +188,10 @@ class Writer:
 
             df_sols = df_sols.append(
                 pd.Series(
-                    [rank + 1, f'{time_diff:.2f}', f'{strategy[1]:.2f}', level_num_cum_gems], 
+                    [rank + 1, f'{time_diff:.2f}', f'{strategy[1]:.2f}', level_num_cum_gems],
                     index=cols
-                ), 
-                ignore_index=True
+                ),
+                ignore_index=True,
             )
             time_prev = strategy[1]
             del time_diff
@@ -199,8 +199,8 @@ class Writer:
         del time_prev
 
         df_sols.to_csv(
-            rf'{workspace_base_folder_abspath}\Output\CTTT_Solutions.csv', 
-            index=False
+            rf'{workspace_base_folder_abspath}\Output\CTTT_Solutions.csv',
+            index=False,
         )
 # ----------------------------------------------------------------------
 # -----------------------------------------------------------------------------
