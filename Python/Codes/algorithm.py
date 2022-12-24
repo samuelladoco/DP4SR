@@ -80,10 +80,10 @@ class OptimizerByDynamicProgramming:
         init=False, default_factory=dict, compare=False,
     )
     # Vertex の探索順をなぜ queue.PriorityQueue で決めたのか記憶がない…
-    # 探索順は (面, ダイヤ数) の辞書式順であり、この実装でもそういう動きをするため楽できるということで選んだのかな?
-    # 本来ならば 面 , ダイヤ数 の 2重の for で回せばよい
+    # 探索順は (面, ダイヤ数) の辞書式順であり、この実装でもそういう動きをすることから楽できるので選んだのかな?
+    # 本来ならば 面 , ダイヤ数 の 2重の for 文で回すのがよい
     # ただし、コレクションの要素数はたかだか len(levels) * max_required_gems なので、
-    # len(levels), max_required_gems の値がよっぽど大きくないかぎりはこの実装でも処理時間は大きくならなさそう
+    # len(levels), max_required_gems の値がよっぽど大きくないかぎりはこの実装でも処理時間は大きくは変わらなさそう
     __q: queue.PriorityQueue[Vertex] = dataclasses.field(
         init=False, default_factory=queue.PriorityQueue, compare=False,
     )
