@@ -19,7 +19,7 @@ from level import Level
 # Classes
 # -----------------------------------------------------------------------------
 # ----------------------------------------------------------------------
-@dataclasses.dataclass(frozen=True, order=True)
+@dataclasses.dataclass(frozen=True, order=True, )
 class Vertex:
     """動的計画法の段階(グラフの頂点)"""
     level: Level
@@ -30,7 +30,7 @@ class Vertex:
 # ----------------------------------------------------------------------
 
 # ----------------------------------------------------------------------
-@dataclasses.dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True, )
 class Label:
     """動的計画法の段階(グラフの頂点)に付与されるラベル"""
     vertex_this: Vertex
@@ -54,7 +54,7 @@ class Label:
 # ----------------------------------------------------------------------
 
 # ----------------------------------------------------------------------
-@dataclasses.dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True, )
 class OptimizerByDynamicProgramming:
     """
     動的計画法(今回の場合、非巡回有向グラフに対するダイクストラ法)によるチャートの最適化
@@ -185,10 +185,10 @@ class OptimizerByDynamicProgramming:
         s += f'mlpv={self.max_labels_per_vertex}\n'
         s += f'lables='
         if len(self.__labels) > 0:
-            s += '\n' + f'\n'.join(
-                [f"{v}: ['{self.__repr_labels(ls)}']"
-                 for v, ls in self.__labels.items()]
-                ) + '\n'
+            s += '\n' + f'\n'.join([
+                f"{v}: ['{self.__repr_labels(ls)}']"
+                for v, ls in self.__labels.items()
+            ]) + '\n'
         else:
             s += '(Empty)'
         return s

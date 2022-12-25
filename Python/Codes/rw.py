@@ -43,7 +43,6 @@ class Reader:
         ( ただし next_levels_and_times は設定されていない )
         """
 
-        # CSV file -> DataFrame
         df_ins_levels: pd.DataFrame = pd.read_csv(
             workspace_base_folder / 'Input' / instance_name / 'Levels.csv'
         )
@@ -97,7 +96,9 @@ class Reader:
         return {l.ep_pg: l for l in [ll for ll in sorted(levels.values())]}
 
     @classmethod
-    def read_levels_and_moves(cls, instance_name: str) -> dict[tuple[int, int], Level]:
+    def read_levels_and_moves(cls,
+            instance_name: str,
+            ) -> dict[tuple[int, int], Level]:
         """
         Levels, Moves ファイルを読み込み、(手前の面から並んだ) Level オブジェクトの集合を生成して返す
         ( next_levels_and_times も設定される )
