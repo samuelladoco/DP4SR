@@ -68,6 +68,14 @@ class Level:
         )
         self.__next_levels_and_times[l] = t
 
+    def __eq__(self, other) -> bool:
+        if isinstance(other, Level):
+            return self.ep_pg == other.ep_pg
+        return False
+
+    def __hash__(self) -> int:
+        return hash(self.ep_pg)
+
     def __repr__(self) -> str:
         return (
             f'{self.ep_pg}: ' +

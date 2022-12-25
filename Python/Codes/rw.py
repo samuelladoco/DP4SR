@@ -177,7 +177,8 @@ class Writer:
             'Rank', 'TimeDifference', 'Time', 'Strategy(Level(NumCumGems))'
         ]
         time_prev: float = strategies[0][1]
-        for rank, strategy in enumerate(strategies):
+        rank: int = 1
+        for index, strategy in enumerate(strategies):
             time_diff: float = strategy[1] - time_prev
             #
             level_num_cum_gems: str = ' -> '.join([
@@ -185,8 +186,10 @@ class Writer:
                 for v in strategy[0]
             ])
             #
+            if time_diff > 0.0009:
+                rank = index + 1
             rows.append(
-                [rank + 1, f'{time_diff:.2f}', f'{strategy[1]:.2f}', level_num_cum_gems],
+                [rank, f'{time_diff:.2f}', f'{strategy[1]:.2f}', level_num_cum_gems],
             )
             time_prev = strategy[1]
 

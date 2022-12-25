@@ -28,7 +28,7 @@ output_moves_pks_only: bool = False
 # Parameters
 # -----------------------------------------------------------------------------
 # Number of strategies (1st, ..., num_strategies-th (at maximum))
-num_strategies: int = 10
+num_strategies: int = 11
 # -----------------------------------------------------------------------------
 
 
