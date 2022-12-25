@@ -16,7 +16,7 @@ import dataclasses
 # Classes
 # -----------------------------------------------------------------------------
 # ----------------------------------------------------------------------
-@dataclasses.dataclass(frozen=True, order=True)
+@dataclasses.dataclass(frozen=True, order=True, )
 class Level:
     """
     面

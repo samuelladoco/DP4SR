@@ -95,8 +95,6 @@ class OptimizerByDynamicProgramming:
             v_start: Vertex = Vertex(self.levels[0], num_gems)
             self.__labels[v_start] = [Label(v_start, None, time)]
             self.__q.put(v_start)
-            del v_start
-        del num_gems, time
 
         # (面, ダイヤ数) を辞書式の順番で探索
         # 実装が面倒なので、計算量は無視して queue.PriorityQueue で対応
@@ -114,12 +112,9 @@ class OptimizerByDynamicProgramming:
             while label_this.label_prev is not None:
                 label_this = label_this.label_prev
                 vs.append(label_this.vertex_this)
-            del label_this
             #
             vs.reverse()
             sols.append((vs, label_goal.cumulative_time))
-            del vs
-        del label_goal
         return sols
 
     def __generate_next(self, vertex_this: Vertex) -> None:
@@ -178,10 +173,6 @@ class OptimizerByDynamicProgramming:
                         # そうでない場合
                         else:
                             pass
-                    del n_g, t, vertex_next
-                del num_gems_next, time_next
-                del level_next, time_move
-        del label_this
         return
 
     def __repr_labels(self, labels: list[Label]) -> str:

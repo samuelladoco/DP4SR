@@ -11,8 +11,9 @@
 from __future__ import annotations
 import os
 import pandas as pd
+import pathlib
 import queue
-from typing import Any, ClassVar
+from typing import Any
 #
 from algorithm import Vertex
 from level import Level
@@ -21,7 +22,9 @@ from level import Level
 
 # Workspace base folder
 # -----------------------------------------------------------------------------
-workspace_base_folder_abspath: str = rf'{os.path.dirname(__file__)}\..\..'
+workspace_base_folder: pathlib.Path = (
+    pathlib.Path(rf'{os.path.dirname(__file__)}').parents[1]
+)
 # -----------------------------------------------------------------------------
 
 
@@ -31,18 +34,21 @@ workspace_base_folder_abspath: str = rf'{os.path.dirname(__file__)}\..\..'
 class Reader:
     """インスタンスのファイルの読み込み(クラスメソッドのみ)"""
 
-    __max_gems_per_l: ClassVar[int]
-    __max_unlock_ls_per_l: ClassVar[int]
-
     @classmethod
-    def read_levels(cls) -> dict[tuple[int, int], Level]:
-        """Levels シート(ファイル)を読み込み、 (手前の面から並んだ) Level オブジェクトの集合を生成して返す"""
+    def read_levels_only(cls,
+            instance_name: str,
+            ) -> dict[tuple[int, int], Level]:
+        """
+        Levels ファイルを読み込み、(手前の面から並んだ) Level オブジェクトの集合を生成して返す
+        ( ただし next_levels_and_times は設定されていない )
+        """
+
         # CSV file -> DataFrame
         df_ins_levels: pd.DataFrame = pd.read_csv(
-            rf'{workspace_base_folder_abspath}\Input\CTTT\CTTT_Levels.csv'
+            workspace_base_folder / 'Input' / instance_name / 'Levels.csv'
         )
 
-        cls.__max_gems_per_l = max(
+        max_gems_per_l: int = max(
             int(str(c).strip('Time_NumGems-')) for c in df_ins_levels.columns
             if (str(c).strip('Time_NumGems-')).isdigit() is True
         )
@@ -58,26 +64,28 @@ class Reader:
         assert temp_ep == temp_pg, (
             f'Unlock_Ep- の最大数 {temp_ep} != Unlock_Pg- の最大数 {temp_pg} です'
         )
-        cls.__max_unlock_ls_per_l = temp_ep
-        del temp_ep, temp_pg
+        max_unlock_ls_per_l: int = temp_ep
 
         # Set of levels
         levels: dict[tuple[int, int], Level] = {}
+        # そんなに行数もないので itertuples() で回してもいいか
         for row in df_ins_levels.itertuples():
             l_from: Level = Level(
                 (int(row[1]), int(row[2])),
                 str(row[3]),
                 cls.__to_zero_if_nan_else_cast(row[4]),
-                {i - 5: round(float(row[i]), 2)
-                 for i in range(5, 5 + cls.__max_gems_per_l + 1)},
+                {
+                    i - 5: round(float(row[i]), 2)
+                    for i in range(5, 5 + max_gems_per_l + 1)
+                },
             )
             levels[l_from.ep_pg] = l_from
-            del l_from
-        del row
+        #
+        # そんなに行数もないので itertuples() で回してもいいか
         for row in df_ins_levels.itertuples():
             for j in range(
-                    5 + cls.__max_gems_per_l + 1,
-                    5 + cls.__max_gems_per_l + 1 + 2 * cls.__max_unlock_ls_per_l,
+                    5 + max_gems_per_l + 1,
+                    5 + max_gems_per_l + 1 + 2 * max_unlock_ls_per_l,
                     2):
                 episode_to: int = cls.__to_zero_if_nan_else_cast(row[j])
                 page_to: int = cls.__to_zero_if_nan_else_cast(row[j + 1])
@@ -85,29 +93,27 @@ class Reader:
                     levels[int(row[1]), int(row[2])].add_to_be_unlock_levels(
                         levels[episode_to, page_to]
                     )
-                del episode_to, page_to
-            del j
-        del row
-        #
-        levels = {l.ep_pg: l for l in [ll for ll in sorted(levels.values())]}
-        return levels
+
+        return {l.ep_pg: l for l in [ll for ll in sorted(levels.values())]}
 
     @classmethod
-    def read_moves_and_update_levels(cls,
-            levels: dict[tuple[int, int], Level]
-            ) -> None:
-        """Moves シート(ファイル)を読み込み、内容を Levels オブジェクトの next_levels_and_times に加える"""
-        # CSV file -> DataFrame
+    def read_levels_and_moves(cls, instance_name: str) -> dict[tuple[int, int], Level]:
+        """
+        Levels, Moves ファイルを読み込み、(手前の面から並んだ) Level オブジェクトの集合を生成して返す
+        ( next_levels_and_times も設定される )
+        """
+        levels: dict[tuple[int, int], Level] = Reader.read_levels_only(instance_name)
+
         df_ins_moves: pd.DataFrame = pd.read_csv(
-            rf'{workspace_base_folder_abspath}\Input\CTTT\CTTT_Moves.csv'
+            workspace_base_folder / 'Input' / instance_name / 'Moves.csv'
         )
 
         for row in df_ins_moves.itertuples():
             l_from: Level = levels[int(row[1]), int(row[2])]
             l_to: Level = levels[int(row[3]), int(row[4])]
             l_from.add_next_levels_and_times(l_to, float(row[5]))
-            del l_from, l_to
-        del row
+
+        return levels
 
     @classmethod
     def __to_zero_if_nan_else_cast(cls, e: Any) -> int:
@@ -120,8 +126,11 @@ class Writer:
     """処理結果のファイルへの書き込み(クラスメソッドのみ)"""
 
     @classmethod
-    def output_moves_pks(cls, levels: dict[tuple[int, int], Level]) -> None:
-        """level オブジェクト の to_be_unlock_level の情報を元に、 Moves ファイル(シート)の主キー部分を出力する"""
+    def output_moves_pks(cls,
+            instance_name: str,
+            levels: dict[tuple[int, int], Level],
+            ) -> None:
+        """level オブジェクト の to_be_unlock_level の情報を元に、 Moves ファイルの主キー部分を出力する"""
         moves_pks: list[tuple[Level, Level]] = []
         #
         ls_unlocked_q: queue.PriorityQueue[Level] = queue.PriorityQueue()
@@ -129,7 +138,6 @@ class Writer:
         l_first: Level = [l for l in levels.values()][0]
         ls_unlocked_q.put(l_first)
         ls_unlocked_set.add(l_first)
-        del l_first
         #
         while ls_unlocked_q.empty() is False:
             l_from: Level = ls_unlocked_q.get()
@@ -138,68 +146,52 @@ class Writer:
             for l_to_be_unlocked in l_from.get_to_be_unlock_levels():
                 ls_unlocked_q.put(l_to_be_unlocked)
                 ls_unlocked_set.add(l_to_be_unlocked)
-                del l_to_be_unlocked
             #
             for l_to in ls_unlocked_set:
                 moves_pks.append((l_from, l_to))
-                del l_to
-            #
-            del l_from
-        del ls_unlocked_q, ls_unlocked_set
         #
         moves_pks.sort()
         #
+        rows: list[list[Any]] = []
         cols: list[str] = ['Ep-From', 'Pg-From', 'Ep-To', 'Pg-To', 'Time']
-        df_moves_pks: pd.DataFrame = pd.DataFrame(columns=cols)
         for pk in moves_pks:
-            df_moves_pks = df_moves_pks.append(
-                pd.Series(
-                    [pk[0].ep_pg[0], pk[0].ep_pg[1],
-                     pk[1].ep_pg[0], pk[1].ep_pg[1], ''],
-                    index=cols
-                ),
-                ignore_index=True,
+            rows.append(
+                [pk[0].ep_pg[0], pk[0].ep_pg[1], pk[1].ep_pg[0], pk[1].ep_pg[1], ''],
             )
-        del pk
+        df_moves_pks: pd.DataFrame = pd.DataFrame(data=rows, columns=cols, )
         df_moves_pks.to_csv(
-            rf'{workspace_base_folder_abspath}\Input\CTTT\CTTT_Moves_base.csv',
+            workspace_base_folder / 'Output' / f'Moves_base_{instance_name}.csv',
             index=False,
         )
 
     @classmethod
     def output_strategies(cls,
-            strategies: list[tuple[list[Vertex], float]]
+            instance_name: str,
+            strategies: list[tuple[list[Vertex], float]],
             ) -> None:
         """ チャートとして strategies (複数個の場合あり)を出力する"""
 
-        def to_str(v: Vertex) -> str:
-            return f'{v.level.ep_pg[0]}-{v.level.ep_pg[1]:0>2}({v.cumlative_num_gems:0>3})'
-
+        rows: list[list[Any]] = []
         cols: list[str] = [
             'Rank', 'TimeDifference', 'Time', 'Strategy(Level(NumCumGems))'
         ]
-        df_sols: pd.DataFrame = pd.DataFrame(columns=cols)
-
         time_prev: float = strategies[0][1]
         for rank, strategy in enumerate(strategies):
             time_diff: float = strategy[1] - time_prev
-
-            level_num_cum_gems: str = ' -> '.join([to_str(v) for v in strategy[0]])
-
-            df_sols = df_sols.append(
-                pd.Series(
-                    [rank + 1, f'{time_diff:.2f}', f'{strategy[1]:.2f}', level_num_cum_gems],
-                    index=cols
-                ),
-                ignore_index=True,
+            #
+            level_num_cum_gems: str = ' -> '.join([
+                f'{v.level.ep_pg[0]}-{v.level.ep_pg[1]:0>2}({v.cumlative_num_gems:0>3})'
+                for v in strategy[0]
+            ])
+            #
+            rows.append(
+                [rank + 1, f'{time_diff:.2f}', f'{strategy[1]:.2f}', level_num_cum_gems],
             )
             time_prev = strategy[1]
-            del time_diff
-        del rank, strategy
-        del time_prev
 
+        df_sols: pd.DataFrame = pd.DataFrame(data=rows, columns=cols, )
         df_sols.to_csv(
-            rf'{workspace_base_folder_abspath}\Output\CTTT_Solutions.csv',
+            workspace_base_folder / 'Output' / f'Solutions_{instance_name}.csv',
             index=False,
         )
 # ----------------------------------------------------------------------
