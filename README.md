@@ -1,4 +1,4 @@
-# Dynamic Programming for Speedrun
+# Dynamic Programming for Speedrun (Python 3.11.9)
 
 （動的計画法により、RTAの第1最適～第n最適までのチャートを算出するプログラム）
 
